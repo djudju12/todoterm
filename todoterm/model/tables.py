@@ -1,25 +1,31 @@
 from typing import Optional
-from sqlalchemy import String
+from sqlalchemy import String, DateTime, func, Boolean
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
-# from todoterm.config import conn_utils
 from sqlalchemy import create_engine
+from tomlkit import parse
+import os 
 
-# engine = conn_utils.new_engine()
-engine = create_engine("sqlite:///tododb.db", echo=True)
+HOME = os.environ.get("HOME")
 
+with open(HOME + "/.config/todoterm/todoconfig.toml", "r") as configs:
+    parsed_configs = parse(configs.read())
+    db_url = HOME + parsed_configs["database"]["url"]
+
+engine = create_engine("sqlite:///" + db_url, echo=True)
 
 class Base(DeclarativeBase):
     pass
 
 
-class User(Base):
-    __tablename__ = "user_account"
+class Todo(Base):
+    __tablename__ = "tb_todo"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(30))
-    fullname: Mapped[Optional[str]]
-
+    task: Mapped[str] = mapped_column(String(100))
+    creation_date: Mapped[DateTime] = mapped_column(DateTime(timezone=True), 
+                                                server_default=func.now())
+    is_finished: Mapped[bool] = mapped_column(Boolean, default=False)
 
 Base.metadata.create_all(engine)
